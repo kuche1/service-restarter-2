@@ -20,21 +20,25 @@ lazy_static! {
 #[command(version, about, long_about = None)]
 struct Args {
 
+    /// Folder to write error info to
+    #[arg(long)]
+    error_folder: String,
+
 	/// When the restart is going to occur, for example 15 for 15:00
     #[arg(short, long, default_value_t = 4)] // uvu helpa to ti kazva `-r, --restart-hour <RESTART_HOUR>   Hour at which the restart will occur` i tova `short` e `-r` a `long` e `--restart-hour`, a puk "komentara" otgore e description-a koito shte izpishe
     restart_at: u8,
 
+    /// Time to sleep if restart time has not been reached
+    #[arg(long, default_value_t = 3600)] // not providing short since there is a conflict with `services` (both start with `s`)
+    check_time_sleep_sec: u64,
+
+	/// Time to sleep after a service has been restarted, as to give services breathing root
+	#[arg(long)]
+	service_restarted_sleep_sec: u64,
+
     /// Services to startart, each needs to end with .service
     #[arg(short, long)]
     services: Vec<String>, // this CAN be empty, multiple services specified with `--services asd --services dfg`
-
-    /// Time to sleep if restart time has not been reached
-    #[arg(long, default_value_t = 3600)] // not providing short since there is a conflict with `services` (both start with `s`)
-    sleep_sec: u64,
-
-    /// Folder to write error info to
-    #[arg(long)]
-    error_folder: String,
 }
 
 fn logerr(msg:String){
@@ -71,7 +75,7 @@ fn main() -> ExitCode {
 	{ // wait for the right time to restart
 
 		let restart_at = args.restart_at;
-		let sleep_sec = args.sleep_sec;
+		let sleep_sec = args.check_time_sleep_sec;
 
 		let target = NaiveTime::from_hms_opt(restart_at.into(), 0, 0).unwrap();
 
@@ -104,6 +108,7 @@ fn main() -> ExitCode {
 
 	{ // restart
 
+		let restart_sleep_sec = args.service_restarted_sleep_sec;
 		let services = args.services;
 
 		let systemctl = systemctl::SystemCtl::default();
@@ -114,27 +119,37 @@ fn main() -> ExitCode {
 			println!("vvv restarting: {}", service);
 
 			// anonymous functions (called closures) use the syntax `|args| -> ret_type code`
-			|| -> () {
+			let success = || -> bool {
 
 				// alternatively, we could call `systemctl try-restart <service>`
 				// note: if the service is in state "activating" it actually DOES restart it
 
 				if !systemctl.exists(&service).unwrap() {
 					logerr(format!("service `{service}` doesn't exist"));
-					return;
+					return false;
 				}
 
-				if !systemctl.is_active(&service).unwrap() {
+				if !systemctl.is_active(&service).unwrap() { // TODO this actually doesnt seem to consider "activating" services as active
 					println!("service `{service}` is not active -> not restarting");
-					return;
+					return false;
 				}
 
 				let exit_status = systemctl.restart(&service).unwrap();
 				if !exit_status.success(){
 					let return_code = exit_status.code().unwrap();
 					logerr(format!("could not restart service `{service}` -> return code {return_code}"));
+					return false;
 				}
+
+				println!("restarted service `{service}`");
+
+				return true;
 			}();
+
+			if success {
+				println!("giving some breating room; sleeping {} sec", restart_sleep_sec);
+				thread::sleep(time::Duration::from_secs(restart_sleep_sec));
+			}
 
 			println!("^^^ restarting: {}", service);
 
