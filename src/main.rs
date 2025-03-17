@@ -162,6 +162,7 @@ fn main() -> ExitCode {
 	}
 
 	// if we get to this point, the restarter service itself has not been restarted
+	logerr("unreachable: service restarter should have restarted itself".to_string());
 	return ExitCode::FAILURE;
 
 	// return ExitCode::SUCCESS;
