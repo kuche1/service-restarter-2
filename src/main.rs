@@ -134,10 +134,11 @@ fn main() -> ExitCode {
 
 				// !systemctl.is_active(&service).unwrap() // this actually doesnt seem to consider "activating" services as active
 
-				if !unit.active {
-					// we can also check for `unit.auto_start`
-					println!("service `{service}` is not active -> not restarting");
-					return false;
+				if !unit.active { // this also doesn't considen an "activating" service as active
+					if unit.auto_start != systemctl::AutoStartStatus::Enabled {
+						println!("service `{service}` is neither active not enabled -> not restarting");
+						return false;
+					}
 				}
 
 				let exit_status = systemctl.restart(&service).unwrap();
