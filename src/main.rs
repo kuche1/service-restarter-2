@@ -43,7 +43,7 @@ fn logerr(msg:String){
 	fs::create_dir_all(ERROR_FOLDER.read().unwrap().to_owned()).unwrap();
 
 	let now = chrono::offset::Local::now();
-	let file_name = now.format("%Y-%m-%d_%H-%M");
+	let file_name = now.format("%Y-%m-%d_%H-%M-%S-%f"); // %f - nanoseconds
 
 	let mut f = File::options()
 		.append(true)
