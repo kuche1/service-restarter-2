@@ -129,7 +129,13 @@ fn main() -> ExitCode {
 					return false;
 				}
 
-				if !systemctl.is_active(&service).unwrap() { // TODO this actually doesnt seem to consider "activating" services as active
+				let unit = systemctl.create_unit(&service).unwrap();
+				// dbg!(unit);
+
+				// !systemctl.is_active(&service).unwrap() // this actually doesnt seem to consider "activating" services as active
+
+				if !unit.active {
+					// we can also check for `unit.auto_start`
 					println!("service `{service}` is not active -> not restarting");
 					return false;
 				}
@@ -141,13 +147,11 @@ fn main() -> ExitCode {
 					return false;
 				}
 
-				println!("restarted service `{service}`");
-
 				return true;
 			}();
 
 			if success {
-				println!("giving some breating room; sleeping {} sec", restart_sleep_sec);
+				println!("service `{service}` restarted; giving some breating room; sleeping {} sec", restart_sleep_sec);
 				thread::sleep(time::Duration::from_secs(restart_sleep_sec));
 			}
 
