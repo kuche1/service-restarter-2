@@ -111,7 +111,11 @@ fn main() -> ExitCode {
 	{ // restart whole server if no internet
 
 		if online::check(None).is_err() {
+
 			logerr("no internet; restarting whole server".to_string());
+
+			// TODO call `sync`
+
 			if system_shutdown::reboot().is_err() {
 				logerr("could not restart server".to_string());
 			}
