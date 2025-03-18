@@ -135,8 +135,8 @@ fn main() -> ExitCode {
 
 			sync();
 
-			if system_shutdown::reboot().is_err() {
-				logerr("could not restart server".to_string());
+			if let Err(err) = system_shutdown::reboot() {
+				logerr(format!("could not restart server: {err}"));
 			}
 		}
 	}
