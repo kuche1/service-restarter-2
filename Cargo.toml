@@ -7,4 +7,5 @@ edition = "2024"
 chrono = "0.4.40"
 clap = { version = "4.5.32", features = ["derive"] }
 lazy_static = "1.5.0"
+online = "4.0.2"
 systemctl = "0.4.0"
