@@ -12,6 +12,7 @@ use std::io::Write;
 use lazy_static::lazy_static; // cargo add lazy_static
 use std::sync::RwLock;
 use online; // cargo add online
+use system_shutdown; // cargo add system_shutdown
 
 lazy_static! {
 	static ref ERROR_FOLDER: RwLock<String> = RwLock::new("UNRNEACHABLE-error-restarter".to_string());
@@ -111,7 +112,9 @@ fn main() -> ExitCode {
 
 		if online::check(None).is_err() {
 			logerr("no internet; restarting whole server".to_string());
-			// TODO
+			if system_shutdown::reboot().is_err() {
+				logerr("could not restart server".to_string());
+			}
 		}
 	}
 
