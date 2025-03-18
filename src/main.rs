@@ -13,6 +13,7 @@ use lazy_static::lazy_static; // cargo add lazy_static
 use std::sync::RwLock;
 use online; // cargo add online
 use system_shutdown; // cargo add system_shutdown
+use std::process::Command;
 
 lazy_static! {
 	static ref ERROR_FOLDER: RwLock<String> = RwLock::new("UNRNEACHABLE-error-restarter".to_string());
@@ -58,6 +59,24 @@ fn logerr(msg:String){
 		.unwrap();
 
 	writeln!(&mut f, "{}", msg).unwrap();
+}
+
+fn sync(){
+	let cmd = Command
+		::new("sync")
+		.output();
+
+	let cmd = match cmd{
+		Ok(val) => val,
+		Err(err) => {
+			logerr(format!("could not call `sync`: {err}"));
+			return;
+		},
+	};
+
+	if !cmd.status.success(){
+		logerr("able to call `sync`; bad return code".to_string());
+	}
 }
 
 fn main() -> ExitCode {
@@ -114,7 +133,7 @@ fn main() -> ExitCode {
 
 			logerr("no internet; restarting whole server".to_string());
 
-			// TODO call `sync`
+			sync();
 
 			if system_shutdown::reboot().is_err() {
 				logerr("could not restart server".to_string());
